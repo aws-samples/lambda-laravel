@@ -1,0 +1,77 @@
+version: "3.9"
+services:
+  release:
+    image: public.ecr.aws/awsguru/php:devel.81.2023.3.13.1
+    working_dir: /var/task
+    entrypoint: /build.sh
+    volumes:
+      - ./build.sh:/build.sh
+      - ./tmp/tmp:/tmp
+      - ./tmp/efs:/mnt/share
+      - ./src/laravel:/var/task
+  build:
+    image: public.ecr.aws/awsguru/php:devel.81.2023.3.13.1
+    working_dir: /var/task
+    entrypoint: /build.sh
+    volumes:
+      - ./build.sh:/build.sh
+      - ./tmp/tmp:/tmp
+      - ./tmp/efs:/mnt/share
+      - ./src/laravel:/var/task
+  web:
+    image: public.ecr.aws/awsguru/php:devel.81.2023.3.13.1
+    working_dir: /var/task
+    entrypoint: /opt/bootstrap
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./tmp/efs:/mnt/share
+      - ./tmp/tmp:/tmp
+      - ./tmp/nginx:/var/log/nginx
+      - ~/.aws/credentials:/root/.aws/credentials
+      - ./src/laravel:/var/task
+      - ./src/runtime/preload.php:/opt/php/preload.php
+      - ./src/runtime/nginx.conf:/opt/nginx/conf/nginx.conf
+      - ./src/runtime/php-fpm.conf:/opt/php/etc/php-fpm.conf
+      - ./src/runtime/php-dev.ini:/opt/php/php.ini
+      - ./src/runtime/bootstrap_dev:/opt/bootstrap
+    links:
+      - mysql
+      - redis
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      RUST_LOG: info
+      AWS_LAMBDA_EXEC_WRAPPER: /opt/bootstrap
+      PRELOAD_DISABLE: true
+      REDIS_PORT: 6379
+      DB_HOST: 'mysql'
+      DB_PORT: 3306
+      DB_DATABASE: 'mysql'
+      DB_USERNAME: 'root'
+      DB_PASSWORD: 'root'
+      APP_ENV: local
+      LOG_CHANNEL: stdout
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      FILESYSTEM_DISK: s3
+    read_only: true
+  mysql:
+    image: mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./tmp/mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: root
+      MYSQL_ROOT_PASSWORD: root
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./tmp/redis:/data
+    command: redis-server --appendonly yes

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Fail on error
+set -e
+
+if [ ! -d '/tmp/session' ]; then
+  mkdir -p /tmp/session
+fi
+
+cd /var/task
+
+/opt/php/bin/php artisan serve --host=0.0.0.0
