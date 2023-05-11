@@ -1,0 +1,8 @@
+/src/laravel/web/app/themes/*
+cdk/cdk.out
+tmp/*/
+.idea
+/cdk/layer/
+.env
+compsoer.lock
+/src/laravel/composer.lock
